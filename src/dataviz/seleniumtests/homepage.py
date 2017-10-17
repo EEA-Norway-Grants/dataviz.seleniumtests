@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import unittest
 from functools import partial
 
@@ -26,11 +28,16 @@ def suite(browser, base_url, extra_args):
     return test_suite()
 
 
-def _to_int(val):
+def _amount_to_int(val):
+    """ Transform the amount to an integer value.
+        Pass it through str.translate in order to get rid of the Euro symbol.
+    """
     return int(val.translate(str.maketrans('', '', '€')).replace(' ', ''))
 
 
 def _get_amounts():
+    """ Retrieve the text displayed for "spent", "programmes" and "projects".
+    """
     return [elm.text.strip() for elm in FINDER.css('.info .amount', many=True)]
 
 
@@ -46,7 +53,10 @@ def _wait_for_amounts(browser):
 
 
 def _amounts(browser):
-    return sum(map(_to_int, _wait_for_amounts(browser)))
+    """ Calculate sum of displayed amounts.
+        Needed to verify that values are smaller when a filter is selected.
+    """
+    return sum(map(_amount_to_int, _wait_for_amounts(browser)))
 
 
 class Homepage(BrowserTestCase):
@@ -59,12 +69,17 @@ class Homepage(BrowserTestCase):
         """
         amounts = partial(_amounts, self.browser)
 
+        # initial chart values
         initial = amounts()
 
+        # click on chart
         FINDER.css('svg g.item.eea-grants').click()
 
+        # check values changed
         self.assertTrue(amounts() < initial)
 
+        # reset filters
         FINDER.css('#reset-filters').click()
 
+        # check values same as initial
         self.assertTrue(amounts() == initial)
